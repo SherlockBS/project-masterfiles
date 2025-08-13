@@ -1,0 +1,32 @@
+name: Update Projects Index Dates
+
+on:
+  push:
+    paths:
+      - '**.md'
+      - '**.docx'
+      - '**.txt'
+      - '**.csv'
+      - '**.py'
+  workflow_dispatch:
+
+jobs:
+  update-index:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Update Last Update dates in projects_index.md
+        run: |
+          TODAY=$(date +'%Y-%m-%d')
+          sed -i "s|\(Berlin & Beyond.*Last Update.*\)<!-- updated by Action -->|\1$TODAY <!-- updated by Action -->|" projects_index.md
+          sed -i "s|\(Trading Framework.*Last Update.*\)<!-- updated by Action -->|\1$TODAY <!-- updated by Action -->|" projects_index.md
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add projects_index.md
+          git commit -m "chore: update Last Update column in projects_index.md" || echo "No changes to commit"
+          git push
