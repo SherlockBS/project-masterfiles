@@ -1,0 +1,47 @@
+name: OCR labels to CSV
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch: {}
+  schedule:
+    - cron: "17 5 * * *"   # täglich 05:17 UTC (optional)
+
+jobs:
+  ocr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install system deps (Tesseract + German)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y tesseract-ocr tesseract-ocr-deu
+          tesseract --list-langs || true
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install pillow opencv-python pytesseract pandas
+
+      - name: Run OCR script
+        run: |
+          python bb_ocr_extract.py
+
+      - name: Commit & push if changed
+        run: |
+          git config user.name  "gh-actions"
+          git config user.email "actions@github.com"
+          if [[ -n "$(git status --porcelain)" ]]; then
+            git add -A
+            git commit -m "auto: update OCR CSV $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+            git push
+          else
+            echo "No changes to commit."
+          fi
